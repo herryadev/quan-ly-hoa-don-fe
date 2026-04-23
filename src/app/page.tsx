@@ -2,6 +2,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 
 type ApiEnvelope<T> = { success: boolean; message: string; data: T };
 type Paginated<T> = { page: number; limit: number; total: number; totalPages: number; items: T[] };
@@ -43,6 +44,15 @@ const inputClassName =
   "rounded border border-gray-300 bg-white px-3 py-2 text-black placeholder:text-gray-500 focus:border-black focus:outline-none";
 const buttonClassName =
   "rounded border border-black bg-black px-3 py-2 font-medium text-white transition hover:bg-white hover:text-black";
+const tableShellClass = "overflow-x-auto rounded border border-gray-200";
+const dataTableClass = "w-full min-w-[280px] border-collapse text-sm";
+const dataThClass =
+  "border-b border-gray-200 bg-gray-50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-700";
+const dataTdClass = "border-b border-gray-100 px-3 py-2 align-middle text-gray-900";
+const formTableClass = "mt-3 w-full border-collapse text-sm";
+const formLabelCellClass =
+  "w-[150px] max-w-[38%] border border-gray-200 bg-gray-50 px-3 py-2 text-left font-medium text-gray-800 align-middle whitespace-nowrap";
+const formFieldCellClass = "border border-gray-200 px-3 py-2 align-middle";
 
 async function request<T>(path: string, init?: RequestInit): Promise<ApiEnvelope<T>> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -123,9 +133,11 @@ export default function Home() {
   const submitItem = async (event: FormEvent) => {
     event.preventDefault();
     try {
+      const createdName = itemForm.name;
       await request<Item>("/items", { method: "POST", body: JSON.stringify(itemForm) });
       setItemForm({ code: "", name: "", unit: "", description: "" });
       await reloadAll();
+      toast.success(`Đã tạo vật tư "${createdName}" thành công.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Tạo vật tư thất bại");
     }
@@ -134,9 +146,11 @@ export default function Home() {
   const submitPartner = async (event: FormEvent) => {
     event.preventDefault();
     try {
+      const createdName = partnerForm.name;
       await request<Partner>("/partners", { method: "POST", body: JSON.stringify(partnerForm) });
       setPartnerForm({ name: "", phone: "", address: "" });
       await reloadAll();
+      toast.success(`Đã tạo đối tác "${createdName}" thành công.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Tạo đối tác thất bại");
     }
@@ -145,9 +159,11 @@ export default function Home() {
   const submitWarehouse = async (event: FormEvent) => {
     event.preventDefault();
     try {
+      const createdName = warehouseForm.name;
       await request<Warehouse>("/warehouses", { method: "POST", body: JSON.stringify(warehouseForm) });
       setWarehouseForm({ name: "", location: "" });
       await reloadAll();
+      toast.success(`Đã tạo kho "${createdName}" thành công.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Tạo kho thất bại");
     }
@@ -156,7 +172,7 @@ export default function Home() {
   const submitReceipt = async (event: FormEvent) => {
     event.preventDefault();
     try {
-      await request<Receipt>("/receipts", {
+      const res = await request<Receipt>("/receipts", {
         method: "POST",
         body: JSON.stringify({
           warehouseId: Number(receiptForm.warehouseId),
@@ -182,6 +198,7 @@ export default function Home() {
         unitPrice: "0",
       });
       await reloadAll();
+      toast.success(`Đã tạo phiếu nhập ${res.data.receiptCode} thành công.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Tạo phiếu nhập thất bại");
     }
@@ -208,6 +225,7 @@ export default function Home() {
       setDeleteConfirm(null);
       await reloadAll();
       setStatus(`Đã xóa ${label}`);
+      toast.success(`Đã xóa ${label} thành công.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Xóa thất bại");
     } finally {
@@ -358,70 +376,243 @@ export default function Home() {
       <p className="mt-1 text-sm text-gray-700">Địa chỉ API: {API_BASE_URL}</p>
       <p className="mt-1 text-sm font-medium text-black">{status}</p>
 
-      <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <article key={stat.label} className="rounded-lg border border-gray-200 bg-white p-4">
-            <p className="text-sm text-gray-700">{stat.label}</p>
-            <p className="text-2xl font-semibold text-black">{stat.value}</p>
-          </article>
-        ))}
+      <section className="mt-6 rounded-lg border border-gray-200 bg-white p-4">
+        <h2 className="text-lg font-semibold">Tổng quan</h2>
+        <div className={`${tableShellClass} mt-3`}>
+          <table className={dataTableClass}>
+            <thead>
+              <tr>
+                {stats.map((stat) => (
+                  <th key={stat.label} className={dataThClass}>
+                    {stat.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                {stats.map((stat) => (
+                  <td key={stat.label} className={`${dataTdClass} text-xl font-semibold`}>
+                    {stat.value}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-2">
         <form onSubmit={submitItem} className="rounded-lg border border-gray-200 bg-white p-4">
           <h2 className="text-lg font-semibold">Thêm vật tư</h2>
-          <div className="mt-3 grid gap-2">
-            <input className={inputClassName} placeholder="Mã" value={itemForm.code} onChange={(e) => setItemForm((s) => ({ ...s, code: e.target.value }))} required />
-            <input className={inputClassName} placeholder="Tên" value={itemForm.name} onChange={(e) => setItemForm((s) => ({ ...s, name: e.target.value }))} required />
-            <input className={inputClassName} placeholder="Đơn vị tính" value={itemForm.unit} onChange={(e) => setItemForm((s) => ({ ...s, unit: e.target.value }))} required />
-            <textarea className={inputClassName} placeholder="Mô tả" value={itemForm.description} onChange={(e) => setItemForm((s) => ({ ...s, description: e.target.value }))} />
-            <button className={buttonClassName} type="submit">Thêm vật tư</button>
-          </div>
+          <table className={formTableClass}>
+            <tbody>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  Mã
+                </th>
+                <td className={formFieldCellClass}>
+                  <input className={`${inputClassName} w-full`} value={itemForm.code} onChange={(e) => setItemForm((s) => ({ ...s, code: e.target.value }))} required />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  Tên
+                </th>
+                <td className={formFieldCellClass}>
+                  <input className={`${inputClassName} w-full`} value={itemForm.name} onChange={(e) => setItemForm((s) => ({ ...s, name: e.target.value }))} required />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  Đơn vị tính
+                </th>
+                <td className={formFieldCellClass}>
+                  <input className={`${inputClassName} w-full`} value={itemForm.unit} onChange={(e) => setItemForm((s) => ({ ...s, unit: e.target.value }))} required />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  Mô tả
+                </th>
+                <td className={formFieldCellClass}>
+                  <textarea className={`${inputClassName} w-full`} rows={3} value={itemForm.description} onChange={(e) => setItemForm((s) => ({ ...s, description: e.target.value }))} />
+                </td>
+              </tr>
+              <tr>
+                <td colSpan={2} className="border border-gray-200 bg-gray-50/50 px-3 py-3 text-right">
+                  <button className={buttonClassName} type="submit">
+                    Thêm vật tư
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </form>
 
         <form onSubmit={submitPartner} className="rounded-lg border border-gray-200 bg-white p-4">
           <h2 className="text-lg font-semibold">Thêm đối tác</h2>
-          <div className="mt-3 grid gap-2">
-            <input className={inputClassName} placeholder="Tên" value={partnerForm.name} onChange={(e) => setPartnerForm((s) => ({ ...s, name: e.target.value }))} required />
-            <input className={inputClassName} placeholder="Số điện thoại" value={partnerForm.phone} onChange={(e) => setPartnerForm((s) => ({ ...s, phone: e.target.value }))} />
-            <input className={inputClassName} placeholder="Địa chỉ" value={partnerForm.address} onChange={(e) => setPartnerForm((s) => ({ ...s, address: e.target.value }))} />
-            <button className={buttonClassName} type="submit">Thêm đối tác</button>
-          </div>
+          <table className={formTableClass}>
+            <tbody>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  Tên
+                </th>
+                <td className={formFieldCellClass}>
+                  <input className={`${inputClassName} w-full`} value={partnerForm.name} onChange={(e) => setPartnerForm((s) => ({ ...s, name: e.target.value }))} required />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  Số điện thoại
+                </th>
+                <td className={formFieldCellClass}>
+                  <input className={`${inputClassName} w-full`} value={partnerForm.phone} onChange={(e) => setPartnerForm((s) => ({ ...s, phone: e.target.value }))} />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  Địa chỉ
+                </th>
+                <td className={formFieldCellClass}>
+                  <input className={`${inputClassName} w-full`} value={partnerForm.address} onChange={(e) => setPartnerForm((s) => ({ ...s, address: e.target.value }))} />
+                </td>
+              </tr>
+              <tr>
+                <td colSpan={2} className="border border-gray-200 bg-gray-50/50 px-3 py-3 text-right">
+                  <button className={buttonClassName} type="submit">
+                    Thêm đối tác
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </form>
 
         <form onSubmit={submitWarehouse} className="rounded-lg border border-gray-200 bg-white p-4">
           <h2 className="text-lg font-semibold">Thêm kho</h2>
-          <div className="mt-3 grid gap-2">
-            <input className={inputClassName} placeholder="Tên kho" value={warehouseForm.name} onChange={(e) => setWarehouseForm((s) => ({ ...s, name: e.target.value }))} required />
-            <input className={inputClassName} placeholder="Vị trí / địa điểm" value={warehouseForm.location} onChange={(e) => setWarehouseForm((s) => ({ ...s, location: e.target.value }))} />
-            <button className={buttonClassName} type="submit">Thêm kho</button>
-          </div>
+          <table className={formTableClass}>
+            <tbody>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  Tên kho
+                </th>
+                <td className={formFieldCellClass}>
+                  <input className={`${inputClassName} w-full`} value={warehouseForm.name} onChange={(e) => setWarehouseForm((s) => ({ ...s, name: e.target.value }))} required />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  Vị trí / địa điểm
+                </th>
+                <td className={formFieldCellClass}>
+                  <input className={`${inputClassName} w-full`} value={warehouseForm.location} onChange={(e) => setWarehouseForm((s) => ({ ...s, location: e.target.value }))} />
+                </td>
+              </tr>
+              <tr>
+                <td colSpan={2} className="border border-gray-200 bg-gray-50/50 px-3 py-3 text-right">
+                  <button className={buttonClassName} type="submit">
+                    Thêm kho
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </form>
 
-        <form onSubmit={submitReceipt} className="rounded-lg border border-gray-200 bg-white p-4">
+        <form onSubmit={submitReceipt} className="rounded-lg border border-gray-200 bg-white p-4 lg:col-span-2">
           <h2 className="text-lg font-semibold">Tạo phiếu nhập</h2>
           <p className="mt-2 text-sm text-gray-700">
             Ngày in: Ngày {printDate.day} tháng {printDate.month} năm {printDate.year}
           </p>
-          <div className="mt-3 grid gap-2">
-            <select className={inputClassName} value={receiptForm.warehouseId} onChange={(e) => setReceiptForm((s) => ({ ...s, warehouseId: e.target.value }))} required>
-              <option value="">Chọn kho</option>
-              {warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}
-            </select>
-            <select className={inputClassName} value={receiptForm.partnerId} onChange={(e) => setReceiptForm((s) => ({ ...s, partnerId: e.target.value }))} required>
-              <option value="">Chọn đối tác</option>
-              {partners.map((partner) => <option key={partner.id} value={partner.id}>{partner.name}</option>)}
-            </select>
-            <select className={inputClassName} value={receiptForm.itemId} onChange={(e) => setReceiptForm((s) => ({ ...s, itemId: e.target.value }))} required>
-              <option value="">Chọn vật tư</option>
-              {items.map((item) => <option key={item.id} value={item.id}>{item.code} - {item.name}</option>)}
-            </select>
-            <input className={inputClassName} placeholder="Số lượng theo chứng từ" type="number" step="0.01" value={receiptForm.quantityDocument} onChange={(e) => setReceiptForm((s) => ({ ...s, quantityDocument: e.target.value }))} required />
-            <input className={inputClassName} placeholder="Số lượng thực nhập" type="number" step="0.01" value={receiptForm.quantityActual} onChange={(e) => setReceiptForm((s) => ({ ...s, quantityActual: e.target.value }))} required />
-            <input className={inputClassName} placeholder="Đơn giá" type="number" step="0.01" value={receiptForm.unitPrice} onChange={(e) => setReceiptForm((s) => ({ ...s, unitPrice: e.target.value }))} required />
-            <textarea className={inputClassName} placeholder="Ghi chú" value={receiptForm.note} onChange={(e) => setReceiptForm((s) => ({ ...s, note: e.target.value }))} />
-            <button className={buttonClassName} type="submit">Tạo phiếu nhập</button>
-          </div>
+          <table className={formTableClass}>
+            <tbody>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  Kho
+                </th>
+                <td className={formFieldCellClass}>
+                  <select className={`${inputClassName} w-full`} value={receiptForm.warehouseId} onChange={(e) => setReceiptForm((s) => ({ ...s, warehouseId: e.target.value }))} required>
+                    <option value="">Chọn kho</option>
+                    {warehouses.map((warehouse) => (
+                      <option key={warehouse.id} value={warehouse.id}>
+                        {warehouse.name}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  Đối tác
+                </th>
+                <td className={formFieldCellClass}>
+                  <select className={`${inputClassName} w-full`} value={receiptForm.partnerId} onChange={(e) => setReceiptForm((s) => ({ ...s, partnerId: e.target.value }))} required>
+                    <option value="">Chọn đối tác</option>
+                    {partners.map((partner) => (
+                      <option key={partner.id} value={partner.id}>
+                        {partner.name}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  Vật tư
+                </th>
+                <td className={formFieldCellClass}>
+                  <select className={`${inputClassName} w-full`} value={receiptForm.itemId} onChange={(e) => setReceiptForm((s) => ({ ...s, itemId: e.target.value }))} required>
+                    <option value="">Chọn vật tư</option>
+                    {items.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.code} - {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  SL theo chứng từ
+                </th>
+                <td className={formFieldCellClass}>
+                  <input className={`${inputClassName} w-full`} type="number" step="0.01" value={receiptForm.quantityDocument} onChange={(e) => setReceiptForm((s) => ({ ...s, quantityDocument: e.target.value }))} required />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  SL thực nhập
+                </th>
+                <td className={formFieldCellClass}>
+                  <input className={`${inputClassName} w-full`} type="number" step="0.01" value={receiptForm.quantityActual} onChange={(e) => setReceiptForm((s) => ({ ...s, quantityActual: e.target.value }))} required />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  Đơn giá
+                </th>
+                <td className={formFieldCellClass}>
+                  <input className={`${inputClassName} w-full`} type="number" step="0.01" value={receiptForm.unitPrice} onChange={(e) => setReceiptForm((s) => ({ ...s, unitPrice: e.target.value }))} required />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" className={formLabelCellClass}>
+                  Ghi chú
+                </th>
+                <td className={formFieldCellClass}>
+                  <textarea className={`${inputClassName} w-full`} rows={2} value={receiptForm.note} onChange={(e) => setReceiptForm((s) => ({ ...s, note: e.target.value }))} />
+                </td>
+              </tr>
+              <tr>
+                <td colSpan={2} className="border border-gray-200 bg-gray-50/50 px-3 py-3 text-right">
+                  <button className={buttonClassName} type="submit">
+                    Tạo phiếu nhập
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </form>
       </section>
 
@@ -433,28 +624,34 @@ export default function Home() {
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-2">
-        <ListCard
+        <DataTable
           title="Vật tư gần đây"
-          rows={items.map((item) => ({
+          headers={["Mã", "Tên", "ĐVT"]}
+          rows={items.slice(0, 8).map((item) => ({
             id: item.id,
+            cells: [item.code, item.name, item.unit],
             label: `${item.code} - ${item.name} (${item.unit})`,
             deleting: deletingEntityKey === `item-${item.id}`,
           }))}
           onDelete={(row) => openDeleteConfirm("item", row.id, row.label)}
         />
-        <ListCard
+        <DataTable
           title="Đối tác gần đây"
-          rows={partners.map((partner) => ({
+          headers={["Tên", "Số điện thoại", "Địa chỉ"]}
+          rows={partners.slice(0, 8).map((partner) => ({
             id: partner.id,
+            cells: [partner.name, partner.phone || "—", partner.address || "—"],
             label: `${partner.name} (${partner.phone || "—"})`,
             deleting: deletingEntityKey === `partner-${partner.id}`,
           }))}
           onDelete={(row) => openDeleteConfirm("partner", row.id, row.label)}
         />
-        <ListCard
+        <DataTable
           title="Kho gần đây"
-          rows={warehouses.map((warehouse) => ({
+          headers={["Tên kho", "Vị trí"]}
+          rows={warehouses.slice(0, 8).map((warehouse) => ({
             id: warehouse.id,
+            cells: [warehouse.name, warehouse.location || "—"],
             label: `${warehouse.name} - ${warehouse.location || "—"}`,
             deleting: deletingEntityKey === `warehouse-${warehouse.id}`,
           }))}
@@ -462,25 +659,41 @@ export default function Home() {
         />
         <article className="rounded-lg border border-gray-200 bg-white p-4">
           <h3 className="text-lg font-semibold">Phiếu nhập gần đây</h3>
-          {receipts.length === 0 ? (
-            <p className="mt-2 text-sm text-gray-700">Chưa có dữ liệu</p>
-          ) : (
-            <ul className="mt-2 space-y-2 text-sm">
-              {receipts.slice(0, 8).map((receipt) => (
-                <li key={receipt.id} className="flex items-center justify-between rounded bg-gray-50 px-2 py-2">
-                  <span>{receipt.receiptCode} - {Number(receipt.totalAmount).toLocaleString()} VND</span>
-                  <button
-                    type="button"
-                    className="rounded border border-black px-2 py-1 text-xs font-medium transition hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-                    onClick={() => void exportReceiptPdf(receipt.id)}
-                    disabled={exportingReceiptId === receipt.id}
-                  >
-                    {exportingReceiptId === receipt.id ? "Đang xuất..." : "Xuất PDF"}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className={`${tableShellClass} mt-3`}>
+            {receipts.length === 0 ? (
+              <p className="px-3 py-6 text-center text-sm text-gray-700">Chưa có dữ liệu</p>
+            ) : (
+              <table className={dataTableClass}>
+                <thead>
+                  <tr>
+                    <th className={dataThClass}>STT</th>
+                    <th className={dataThClass}>Mã phiếu</th>
+                    <th className={`${dataThClass} text-right`}>Tổng tiền (VND)</th>
+                    <th className={`${dataThClass} w-[120px]`}>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {receipts.slice(0, 8).map((receipt, index) => (
+                    <tr key={receipt.id}>
+                      <td className={dataTdClass}>{index + 1}</td>
+                      <td className={`${dataTdClass} font-medium`}>{receipt.receiptCode}</td>
+                      <td className={`${dataTdClass} text-right tabular-nums`}>{Number(receipt.totalAmount).toLocaleString("vi-VN")}</td>
+                      <td className={dataTdClass}>
+                        <button
+                          type="button"
+                          className="rounded border border-black px-2 py-1 text-xs font-medium transition hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                          onClick={() => void exportReceiptPdf(receipt.id)}
+                          disabled={exportingReceiptId === receipt.id}
+                        >
+                          {exportingReceiptId === receipt.id ? "Đang xuất..." : "Xuất PDF"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </article>
       </section>
 
@@ -516,39 +729,65 @@ export default function Home() {
   );
 }
 
-function ListCard({
+type DataTableRow = { id: number; cells: string[]; label: string; deleting?: boolean };
+
+function DataTable({
   title,
+  headers,
   rows,
   onDelete,
 }: {
   title: string;
-  rows: { id: number; label: string; deleting?: boolean }[];
+  headers: string[];
+  rows: DataTableRow[];
   onDelete?: (row: { id: number; label: string }) => void;
 }) {
   return (
     <article className="rounded-lg border border-gray-200 bg-white p-4">
       <h3 className="text-lg font-semibold">{title}</h3>
-      {rows.length === 0 ? (
-        <p className="mt-2 text-sm text-gray-700">Chưa có dữ liệu</p>
-      ) : (
-        <ul className="mt-2 space-y-1 text-sm">
-          {rows.slice(0, 8).map((row) => (
-            <li key={row.id} className="flex items-center justify-between gap-2 rounded bg-gray-50 px-2 py-2">
-              <span className="min-w-0 flex-1 truncate">{row.label}</span>
-              {onDelete ? (
-                <button
-                  type="button"
-                  className="rounded border border-red-600 px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-                  onClick={() => onDelete({ id: row.id, label: row.label })}
-                  disabled={Boolean(row.deleting)}
-                >
-                  {row.deleting ? "Đang xóa..." : "Xóa"}
-                </button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className={`${tableShellClass} mt-3`}>
+        {rows.length === 0 ? (
+          <p className="px-3 py-6 text-center text-sm text-gray-700">Chưa có dữ liệu</p>
+        ) : (
+          <table className={dataTableClass}>
+            <thead>
+              <tr>
+                <th className={`${dataThClass} w-12`}>STT</th>
+                {headers.map((header) => (
+                  <th key={header} className={dataThClass}>
+                    {header}
+                  </th>
+                ))}
+                {onDelete ? <th className={`${dataThClass} w-[88px]`}>Thao tác</th> : null}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, index) => (
+                <tr key={row.id} className="hover:bg-gray-50/80">
+                  <td className={dataTdClass}>{index + 1}</td>
+                  {row.cells.map((cell, i) => (
+                    <td key={i} className={`${dataTdClass} max-w-[200px] truncate`} title={cell}>
+                      {cell}
+                    </td>
+                  ))}
+                  {onDelete ? (
+                    <td className={dataTdClass}>
+                      <button
+                        type="button"
+                        className="rounded border border-red-600 px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        onClick={() => onDelete({ id: row.id, label: row.label })}
+                        disabled={Boolean(row.deleting)}
+                      >
+                        {row.deleting ? "Đang xóa..." : "Xóa"}
+                      </button>
+                    </td>
+                  ) : null}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </article>
   );
 }
