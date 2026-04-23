@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Inventory Frontend
 
-## Getting Started
+Frontend Next.js de goi cac API quan ly kho:
 
-First, run the development server:
+- `GET/POST /api/items`
+- `GET/POST /api/partners`
+- `GET/POST /api/warehouses`
+- `GET/POST /api/receipts`
+
+## Setup
+
+1. Tao file `.env.local`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.local.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Chinh `NEXT_PUBLIC_API_BASE_URL` tro den backend (mac dinh: `http://localhost:3000/api`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Chay frontend:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm dev
+```
 
-## Learn More
+4. Mo `http://localhost:3001` (hoac port Next.js hien thi tren terminal).
 
-To learn more about Next.js, take a look at the following resources:
+## Chuc nang da co
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Dashboard tong quan so luong ban ghi.
+- Form tao nhanh `Item`, `Partner`, `Warehouse`.
+- Form tao `Receipt` (1 dong item).
+- Danh sach ban ghi moi nhat de theo doi ket qua goi API.
