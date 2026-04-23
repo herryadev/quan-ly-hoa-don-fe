@@ -52,7 +52,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiEnvelope
 
   const payload = (await response.json()) as ApiEnvelope<T>;
   if (!response.ok || !payload.success) {
-    throw new Error(payload.message || "API request failed");
+    throw new Error(payload.message || "Yêu cầu API thất bại");
   }
   return payload;
 }
@@ -68,7 +68,7 @@ export default function Home() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [receipts, setReceipts] = useState<Receipt[]>([]);
-  const [status, setStatus] = useState("Ready");
+  const [status, setStatus] = useState("Sẵn sàng");
   const [exportingReceiptId, setExportingReceiptId] = useState<number | null>(null);
   const [deletingEntityKey, setDeletingEntityKey] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>(null);
@@ -88,7 +88,7 @@ export default function Home() {
 
   const reloadAll = async () => {
     try {
-      setStatus("Loading data...");
+      setStatus("Đang tải dữ liệu...");
       const [itemRes, partnerRes, warehouseRes, receiptRes] = await Promise.all([
         request<Paginated<Item>>("/items?page=1&limit=20"),
         request<Paginated<Partner>>("/partners?page=1&limit=20"),
@@ -99,9 +99,9 @@ export default function Home() {
       setPartners(partnerRes.data.items);
       setWarehouses(warehouseRes.data.items);
       setReceipts(receiptRes.data.items);
-      setStatus("Data synced");
+      setStatus("Đã đồng bộ dữ liệu");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Failed to load");
+      setStatus(error instanceof Error ? error.message : "Tải dữ liệu thất bại");
     }
   };
 
@@ -112,10 +112,10 @@ export default function Home() {
 
   const stats = useMemo(
     () => [
-      { label: "Items", value: items.length },
-      { label: "Partners", value: partners.length },
-      { label: "Warehouses", value: warehouses.length },
-      { label: "Receipts", value: receipts.length },
+      { label: "Vật tư", value: items.length },
+      { label: "Đối tác", value: partners.length },
+      { label: "Kho", value: warehouses.length },
+      { label: "Phiếu nhập", value: receipts.length },
     ],
     [items.length, partners.length, receipts.length, warehouses.length]
   );
@@ -127,7 +127,7 @@ export default function Home() {
       setItemForm({ code: "", name: "", unit: "", description: "" });
       await reloadAll();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Create item failed");
+      setStatus(error instanceof Error ? error.message : "Tạo vật tư thất bại");
     }
   };
 
@@ -138,7 +138,7 @@ export default function Home() {
       setPartnerForm({ name: "", phone: "", address: "" });
       await reloadAll();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Create partner failed");
+      setStatus(error instanceof Error ? error.message : "Tạo đối tác thất bại");
     }
   };
 
@@ -149,7 +149,7 @@ export default function Home() {
       setWarehouseForm({ name: "", location: "" });
       await reloadAll();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Create warehouse failed");
+      setStatus(error instanceof Error ? error.message : "Tạo kho thất bại");
     }
   };
 
@@ -183,7 +183,7 @@ export default function Home() {
       });
       await reloadAll();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Create receipt failed");
+      setStatus(error instanceof Error ? error.message : "Tạo phiếu nhập thất bại");
     }
   };
 
@@ -203,13 +203,13 @@ export default function Home() {
 
     try {
       setDeletingEntityKey(`${kind}-${id}`);
-      setStatus(`Dang xoa ${label}...`);
+      setStatus(`Đang xóa ${label}...`);
       await request<null>(`${endpointMap[kind]}/${id}`, { method: "DELETE" });
       setDeleteConfirm(null);
       await reloadAll();
-      setStatus(`Da xoa ${label}`);
+      setStatus(`Đã xóa ${label}`);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Delete failed");
+      setStatus(error instanceof Error ? error.message : "Xóa thất bại");
     } finally {
       setDeletingEntityKey(null);
     }
@@ -227,7 +227,7 @@ export default function Home() {
   const exportReceiptPdf = async (receiptId: number) => {
     try {
       setExportingReceiptId(receiptId);
-      setStatus("Dang tao file PDF...");
+      setStatus("Đang tạo file PDF...");
       const receiptRes = await request<ReceiptDetail>(`/receipts/${receiptId}`);
       const receipt = receiptRes.data;
       const receiptDate = new Date(receipt.receiptDate || Date.now());
@@ -235,7 +235,7 @@ export default function Home() {
         .map((line, index) => {
           const itemLabel = line.item
             ? `${escapeHtml(line.item.name)} (${escapeHtml(line.item.code)})`
-            : "Khong co du lieu";
+            : "Không có dữ liệu";
           return `
             <tr>
               <td class="center">${index + 1}</td>
@@ -283,53 +283,53 @@ export default function Home() {
           <body>
             <div class="top">
               <div class="muted">
-                <div>Don vi: ..................................................</div>
-                <div>Bo phan: ................................................</div>
+                <div>Đơn vị: ..................................................</div>
+                <div>Bộ phận: ................................................</div>
               </div>
               <div class="muted" style="text-align:right">
-                <div><b>Mau so 01 - VT</b></div>
-                <div>(Ban hanh theo Thong tu 200/2014/TT-BTC)</div>
+                <div><b>Mẫu số 01 - VT</b></div>
+                <div>(Ban hành theo Thông tư 200/2014/TT-BTC)</div>
               </div>
             </div>
 
             <div class="title">
-              <h1>PHIEU NHAP KHO</h1>
-              <p>Ngay ${receiptDate.getDate()} thang ${receiptDate.getMonth() + 1} nam ${receiptDate.getFullYear()}</p>
+              <h1>PHIẾU NHẬP KHO</h1>
+              <p>Ngày ${receiptDate.getDate()} tháng ${receiptDate.getMonth() + 1} năm ${receiptDate.getFullYear()}</p>
             </div>
 
             <div class="meta">
-              <div>So: <b>${escapeHtml(receipt.receiptCode)}</b></div>
-              <div>Ho va ten nguoi giao: ${escapeHtml(receipt.partner?.name || "")}</div>
-              <div>Nhap tai kho: ${escapeHtml(receipt.warehouse?.name || "")}</div>
-              <div>Dia diem: ${escapeHtml(receipt.warehouse?.location || "")}</div>
-              <div>Ghi chu: ${escapeHtml(receipt.note || "")}</div>
+              <div>Số: <b>${escapeHtml(receipt.receiptCode)}</b></div>
+              <div>Họ và tên người giao: ${escapeHtml(receipt.partner?.name || "")}</div>
+              <div>Nhập tại kho: ${escapeHtml(receipt.warehouse?.name || "")}</div>
+              <div>Địa điểm: ${escapeHtml(receipt.warehouse?.location || "")}</div>
+              <div>Ghi chú: ${escapeHtml(receipt.note || "")}</div>
             </div>
 
             <table>
               <thead>
                 <tr>
                   <th>STT</th>
-                  <th>Ten, nhan hieu, quy cach</th>
-                  <th>Ma so</th>
-                  <th>Don vi tinh</th>
-                  <th>Theo chung tu</th>
-                  <th>Thuc nhap</th>
-                  <th>Don gia</th>
-                  <th>Thanh tien</th>
+                  <th>Tên, nhãn hiệu, quy cách</th>
+                  <th>Mã số</th>
+                  <th>Đơn vị tính</th>
+                  <th>Theo chứng từ</th>
+                  <th>Thực nhập</th>
+                  <th>Đơn giá</th>
+                  <th>Thành tiền</th>
                 </tr>
               </thead>
               <tbody>
-                ${rows || '<tr><td class="center" colspan="8">Khong co du lieu</td></tr>'}
+                ${rows || '<tr><td class="center" colspan="8">Không có dữ liệu</td></tr>'}
               </tbody>
             </table>
 
-            <div class="total"><b>Tong so tien:</b> ${toNumberText(receipt.totalAmount)} VND</div>
+            <div class="total"><b>Tổng số tiền:</b> ${toNumberText(receipt.totalAmount)} VND</div>
 
             <div class="sign">
-              <div class="sign-item"><b>Nguoi lap phieu</b><i>(Ky, ho ten)</i></div>
-              <div class="sign-item"><b>Nguoi giao hang</b><i>(Ky, ho ten)</i></div>
-              <div class="sign-item"><b>Thu kho</b><i>(Ky, ho ten)</i></div>
-              <div class="sign-item"><b>Ke toan truong</b><i>(Ky, ho ten)</i></div>
+              <div class="sign-item"><b>Người lập phiếu</b><i>(Ký, họ tên)</i></div>
+              <div class="sign-item"><b>Người giao hàng</b><i>(Ký, họ tên)</i></div>
+              <div class="sign-item"><b>Thủ kho</b><i>(Ký, họ tên)</i></div>
+              <div class="sign-item"><b>Kế toán trưởng</b><i>(Ký, họ tên)</i></div>
             </div>
           </body>
         </html>
@@ -337,16 +337,16 @@ export default function Home() {
 
       const printWindow = window.open("", "_blank", "width=1024,height=768");
       if (!printWindow) {
-        throw new Error("Khong mo duoc cua so in. Hay cho phep popup va thu lai.");
+        throw new Error("Không mở được cửa sổ in. Hãy cho phép popup và thử lại.");
       }
       printWindow.document.open();
       printWindow.document.write(html);
       printWindow.document.close();
       printWindow.focus();
       printWindow.print();
-      setStatus(`Da mo hop thoai PDF cho ${receipt.receiptCode}`);
+      setStatus(`Đã mở hộp thoại in cho ${receipt.receiptCode}`);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Xuat PDF that bai");
+      setStatus(error instanceof Error ? error.message : "Xuất PDF thất bại");
     } finally {
       setExportingReceiptId(null);
     }
@@ -354,8 +354,8 @@ export default function Home() {
 
   return (
     <main className="mx-auto w-full max-w-7xl px-6 py-8 text-black">
-      <h1 className="text-3xl font-semibold text-black">Inventory API Dashboard</h1>
-      <p className="mt-1 text-sm text-gray-700">Base URL: {API_BASE_URL}</p>
+      <h1 className="text-3xl font-semibold text-black">Bảng điều khiển quản lý kho</h1>
+      <p className="mt-1 text-sm text-gray-700">Địa chỉ API: {API_BASE_URL}</p>
       <p className="mt-1 text-sm font-medium text-black">{status}</p>
 
       <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -369,72 +369,72 @@ export default function Home() {
 
       <section className="mt-8 grid gap-6 lg:grid-cols-2">
         <form onSubmit={submitItem} className="rounded-lg border border-gray-200 bg-white p-4">
-          <h2 className="text-lg font-semibold">Create Item</h2>
+          <h2 className="text-lg font-semibold">Thêm vật tư</h2>
           <div className="mt-3 grid gap-2">
-            <input className={inputClassName} placeholder="Code" value={itemForm.code} onChange={(e) => setItemForm((s) => ({ ...s, code: e.target.value }))} required />
-            <input className={inputClassName} placeholder="Name" value={itemForm.name} onChange={(e) => setItemForm((s) => ({ ...s, name: e.target.value }))} required />
-            <input className={inputClassName} placeholder="Unit" value={itemForm.unit} onChange={(e) => setItemForm((s) => ({ ...s, unit: e.target.value }))} required />
-            <textarea className={inputClassName} placeholder="Description" value={itemForm.description} onChange={(e) => setItemForm((s) => ({ ...s, description: e.target.value }))} />
-            <button className={buttonClassName} type="submit">Add Item</button>
+            <input className={inputClassName} placeholder="Mã" value={itemForm.code} onChange={(e) => setItemForm((s) => ({ ...s, code: e.target.value }))} required />
+            <input className={inputClassName} placeholder="Tên" value={itemForm.name} onChange={(e) => setItemForm((s) => ({ ...s, name: e.target.value }))} required />
+            <input className={inputClassName} placeholder="Đơn vị tính" value={itemForm.unit} onChange={(e) => setItemForm((s) => ({ ...s, unit: e.target.value }))} required />
+            <textarea className={inputClassName} placeholder="Mô tả" value={itemForm.description} onChange={(e) => setItemForm((s) => ({ ...s, description: e.target.value }))} />
+            <button className={buttonClassName} type="submit">Thêm vật tư</button>
           </div>
         </form>
 
         <form onSubmit={submitPartner} className="rounded-lg border border-gray-200 bg-white p-4">
-          <h2 className="text-lg font-semibold">Create Partner</h2>
+          <h2 className="text-lg font-semibold">Thêm đối tác</h2>
           <div className="mt-3 grid gap-2">
-            <input className={inputClassName} placeholder="Name" value={partnerForm.name} onChange={(e) => setPartnerForm((s) => ({ ...s, name: e.target.value }))} required />
-            <input className={inputClassName} placeholder="Phone" value={partnerForm.phone} onChange={(e) => setPartnerForm((s) => ({ ...s, phone: e.target.value }))} />
-            <input className={inputClassName} placeholder="Address" value={partnerForm.address} onChange={(e) => setPartnerForm((s) => ({ ...s, address: e.target.value }))} />
-            <button className={buttonClassName} type="submit">Add Partner</button>
+            <input className={inputClassName} placeholder="Tên" value={partnerForm.name} onChange={(e) => setPartnerForm((s) => ({ ...s, name: e.target.value }))} required />
+            <input className={inputClassName} placeholder="Số điện thoại" value={partnerForm.phone} onChange={(e) => setPartnerForm((s) => ({ ...s, phone: e.target.value }))} />
+            <input className={inputClassName} placeholder="Địa chỉ" value={partnerForm.address} onChange={(e) => setPartnerForm((s) => ({ ...s, address: e.target.value }))} />
+            <button className={buttonClassName} type="submit">Thêm đối tác</button>
           </div>
         </form>
 
         <form onSubmit={submitWarehouse} className="rounded-lg border border-gray-200 bg-white p-4">
-          <h2 className="text-lg font-semibold">Create Warehouse</h2>
+          <h2 className="text-lg font-semibold">Thêm kho</h2>
           <div className="mt-3 grid gap-2">
-            <input className={inputClassName} placeholder="Name" value={warehouseForm.name} onChange={(e) => setWarehouseForm((s) => ({ ...s, name: e.target.value }))} required />
-            <input className={inputClassName} placeholder="Location" value={warehouseForm.location} onChange={(e) => setWarehouseForm((s) => ({ ...s, location: e.target.value }))} />
-            <button className={buttonClassName} type="submit">Add Warehouse</button>
+            <input className={inputClassName} placeholder="Tên kho" value={warehouseForm.name} onChange={(e) => setWarehouseForm((s) => ({ ...s, name: e.target.value }))} required />
+            <input className={inputClassName} placeholder="Vị trí / địa điểm" value={warehouseForm.location} onChange={(e) => setWarehouseForm((s) => ({ ...s, location: e.target.value }))} />
+            <button className={buttonClassName} type="submit">Thêm kho</button>
           </div>
         </form>
 
         <form onSubmit={submitReceipt} className="rounded-lg border border-gray-200 bg-white p-4">
-          <h2 className="text-lg font-semibold">Create Receipt</h2>
+          <h2 className="text-lg font-semibold">Tạo phiếu nhập</h2>
           <p className="mt-2 text-sm text-gray-700">
-            Print date: Ngày {printDate.day} tháng {printDate.month} năm {printDate.year}
+            Ngày in: Ngày {printDate.day} tháng {printDate.month} năm {printDate.year}
           </p>
           <div className="mt-3 grid gap-2">
             <select className={inputClassName} value={receiptForm.warehouseId} onChange={(e) => setReceiptForm((s) => ({ ...s, warehouseId: e.target.value }))} required>
-              <option value="">Warehouse</option>
+              <option value="">Chọn kho</option>
               {warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}
             </select>
             <select className={inputClassName} value={receiptForm.partnerId} onChange={(e) => setReceiptForm((s) => ({ ...s, partnerId: e.target.value }))} required>
-              <option value="">Partner</option>
+              <option value="">Chọn đối tác</option>
               {partners.map((partner) => <option key={partner.id} value={partner.id}>{partner.name}</option>)}
             </select>
             <select className={inputClassName} value={receiptForm.itemId} onChange={(e) => setReceiptForm((s) => ({ ...s, itemId: e.target.value }))} required>
-              <option value="">Item</option>
+              <option value="">Chọn vật tư</option>
               {items.map((item) => <option key={item.id} value={item.id}>{item.code} - {item.name}</option>)}
             </select>
-            <input className={inputClassName} placeholder="Quantity document" type="number" step="0.01" value={receiptForm.quantityDocument} onChange={(e) => setReceiptForm((s) => ({ ...s, quantityDocument: e.target.value }))} required />
-            <input className={inputClassName} placeholder="Quantity actual" type="number" step="0.01" value={receiptForm.quantityActual} onChange={(e) => setReceiptForm((s) => ({ ...s, quantityActual: e.target.value }))} required />
-            <input className={inputClassName} placeholder="Unit price" type="number" step="0.01" value={receiptForm.unitPrice} onChange={(e) => setReceiptForm((s) => ({ ...s, unitPrice: e.target.value }))} required />
-            <textarea className={inputClassName} placeholder="Note" value={receiptForm.note} onChange={(e) => setReceiptForm((s) => ({ ...s, note: e.target.value }))} />
-            <button className={buttonClassName} type="submit">Add Receipt</button>
+            <input className={inputClassName} placeholder="Số lượng theo chứng từ" type="number" step="0.01" value={receiptForm.quantityDocument} onChange={(e) => setReceiptForm((s) => ({ ...s, quantityDocument: e.target.value }))} required />
+            <input className={inputClassName} placeholder="Số lượng thực nhập" type="number" step="0.01" value={receiptForm.quantityActual} onChange={(e) => setReceiptForm((s) => ({ ...s, quantityActual: e.target.value }))} required />
+            <input className={inputClassName} placeholder="Đơn giá" type="number" step="0.01" value={receiptForm.unitPrice} onChange={(e) => setReceiptForm((s) => ({ ...s, unitPrice: e.target.value }))} required />
+            <textarea className={inputClassName} placeholder="Ghi chú" value={receiptForm.note} onChange={(e) => setReceiptForm((s) => ({ ...s, note: e.target.value }))} />
+            <button className={buttonClassName} type="submit">Tạo phiếu nhập</button>
           </div>
         </form>
       </section>
 
       <section className="mt-8 rounded-lg border border-gray-300 bg-white p-6">
-        <h2 className="mt-4 text-center text-2xl font-bold uppercase">Phieu nhap kho</h2>
+        <h2 className="mt-4 text-center text-2xl font-bold uppercase">Phiếu nhập kho</h2>
         <p className="mt-2 text-center text-base">
-          Ngay {printDate.day} thang {printDate.month} nam {printDate.year}
+          Ngày {printDate.day} tháng {printDate.month} năm {printDate.year}
         </p>
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-2">
         <ListCard
-          title="Latest Items"
+          title="Vật tư gần đây"
           rows={items.map((item) => ({
             id: item.id,
             label: `${item.code} - ${item.name} (${item.unit})`,
@@ -443,27 +443,27 @@ export default function Home() {
           onDelete={(row) => openDeleteConfirm("item", row.id, row.label)}
         />
         <ListCard
-          title="Latest Partners"
+          title="Đối tác gần đây"
           rows={partners.map((partner) => ({
             id: partner.id,
-            label: `${partner.name} (${partner.phone || "n/a"})`,
+            label: `${partner.name} (${partner.phone || "—"})`,
             deleting: deletingEntityKey === `partner-${partner.id}`,
           }))}
           onDelete={(row) => openDeleteConfirm("partner", row.id, row.label)}
         />
         <ListCard
-          title="Latest Warehouses"
+          title="Kho gần đây"
           rows={warehouses.map((warehouse) => ({
             id: warehouse.id,
-            label: `${warehouse.name} - ${warehouse.location || "n/a"}`,
+            label: `${warehouse.name} - ${warehouse.location || "—"}`,
             deleting: deletingEntityKey === `warehouse-${warehouse.id}`,
           }))}
           onDelete={(row) => openDeleteConfirm("warehouse", row.id, row.label)}
         />
         <article className="rounded-lg border border-gray-200 bg-white p-4">
-          <h3 className="text-lg font-semibold">Latest Receipts</h3>
+          <h3 className="text-lg font-semibold">Phiếu nhập gần đây</h3>
           {receipts.length === 0 ? (
-            <p className="mt-2 text-sm text-gray-700">No data yet</p>
+            <p className="mt-2 text-sm text-gray-700">Chưa có dữ liệu</p>
           ) : (
             <ul className="mt-2 space-y-2 text-sm">
               {receipts.slice(0, 8).map((receipt) => (
@@ -475,7 +475,7 @@ export default function Home() {
                     onClick={() => void exportReceiptPdf(receipt.id)}
                     disabled={exportingReceiptId === receipt.id}
                   >
-                    {exportingReceiptId === receipt.id ? "Dang xuat..." : "Xuat PDF"}
+                    {exportingReceiptId === receipt.id ? "Đang xuất..." : "Xuất PDF"}
                   </button>
                 </li>
               ))}
@@ -487,9 +487,9 @@ export default function Home() {
       {deleteConfirm ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-md rounded-lg border border-gray-300 bg-white p-4 shadow-lg">
-            <h3 className="text-lg font-semibold text-black">Xac nhan xoa</h3>
+            <h3 className="text-lg font-semibold text-black">Xác nhận xóa</h3>
             <p className="mt-2 text-sm text-gray-700">
-              Ban co chac muon xoa <b>{deleteConfirm.label}</b> khong?
+              Bạn có chắc muốn xóa <b>{deleteConfirm.label}</b> không?
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <button
@@ -498,7 +498,7 @@ export default function Home() {
                 onClick={() => setDeleteConfirm(null)}
                 disabled={Boolean(deletingEntityKey)}
               >
-                Huy
+                Hủy
               </button>
               <button
                 type="button"
@@ -506,7 +506,7 @@ export default function Home() {
                 onClick={() => void confirmDelete()}
                 disabled={Boolean(deletingEntityKey)}
               >
-                {deletingEntityKey ? "Dang xoa..." : "Xoa"}
+                {deletingEntityKey ? "Đang xóa..." : "Xóa"}
               </button>
             </div>
           </div>
@@ -529,7 +529,7 @@ function ListCard({
     <article className="rounded-lg border border-gray-200 bg-white p-4">
       <h3 className="text-lg font-semibold">{title}</h3>
       {rows.length === 0 ? (
-        <p className="mt-2 text-sm text-gray-700">No data yet</p>
+        <p className="mt-2 text-sm text-gray-700">Chưa có dữ liệu</p>
       ) : (
         <ul className="mt-2 space-y-1 text-sm">
           {rows.slice(0, 8).map((row) => (
@@ -542,7 +542,7 @@ function ListCard({
                   onClick={() => onDelete({ id: row.id, label: row.label })}
                   disabled={Boolean(row.deleting)}
                 >
-                  {row.deleting ? "Deleting..." : "Delete"}
+                  {row.deleting ? "Đang xóa..." : "Xóa"}
                 </button>
               ) : null}
             </li>
